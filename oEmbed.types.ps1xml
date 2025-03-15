@@ -1,0 +1,51 @@
+<!-- Generated with EZOut 2.0.6: Install-Module EZOut or https://github.com/StartAutomating/EZOut -->
+<Types>
+  <Type>
+    <Name>oEmbed</Name>
+    <Members>
+      <ScriptMethod>
+        <Name>Get</Name>
+        <Script>
+                        foreach ($argument in $args) {
+    oEmbed -Url $argument
+}
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptProperty>
+        <Name>oEmbedCache</Name>
+        <GetScriptBlock>
+                        return &amp; $this { $script:oEmbedUrlCache }
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>oEmbedProvider</Name>
+        <GetScriptBlock>
+                        Get-OEmbed -ProviderList
+                    </GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
+  <Type>
+    <Name>openEmbedding</Name>
+    <Members>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>
+                        return "$($this.HTML)"
+                    </Script>
+      </ScriptMethod>
+      <ScriptProperty>
+        <Name>Markdown</Name>
+        <GetScriptBlock>
+                        if ($this.thumbnail_url) {
+    return "[![$($this.title)]($($this.thumbnail_url))]($($this.url))"
+}
+elseif ($this.title) {
+    "[$($this.title)]($($this.url))"
+}
+                    </GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
+</Types>
