@@ -3,6 +3,15 @@
   <Type>
     <Name>oEmbed</Name>
     <Members>
+      <ScriptMethod>
+        <Name>Get</Name>
+        <Script>
+                        foreach ($argument in $args) {
+    oEmbed -Url $argument
+}
+
+                    </Script>
+      </ScriptMethod>
       <ScriptProperty>
         <Name>oEmbedCache</Name>
         <GetScriptBlock>
