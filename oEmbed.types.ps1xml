@@ -26,4 +26,15 @@
       </ScriptProperty>
     </Members>
   </Type>
+  <Type>
+    <Name>openEmbedding</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>Markdown</Name>
+        <GetScriptBlock>
+                        "[![$($this.title)]($($this.thumbnail_url))]($($this.url))"
+                    </GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
 </Types>
