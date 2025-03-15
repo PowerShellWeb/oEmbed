@@ -8,32 +8,34 @@ function Get-OEmbed {
         [oEmbed](https://oembed.com/) is a format for allowing an embedded representation of a URL on third party sites.
 
         Most social networks support oEmbed, so this little function lets you embed almost any social network post
+    .EXAMPLE
+        oEmbed -Url https://www.youtube.com/watch?v=UIR9Z_JdVhs
     #>
     [Alias('oEmbed')]
-    [CmdletBinding(PositionalBinding=$false,SupportsShouldProcess,DefaultParameterSetName='?url')]
+    [CmdletBinding(PositionalBinding=$false,SupportsShouldProcess,DefaultParameterSetName='Query')]
     param(
     # The URL
-    [Parameter(Mandatory,Position=0,ValueFromPipeline,ValueFromPipelineByPropertyName,ParameterSetName='?url')]
+    [Parameter(Mandatory,Position=0,ValueFromPipeline,ValueFromPipelineByPropertyName,ParameterSetName='Query')]
     [Uri]
     $Url,
     
     # The maximum width of the returned image
-    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='?url')]
+    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='Query')]
     [int]
     $MaxWidth,
 
     # The maximum height of the returned image
-    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='?url')]
+    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='Query')]
     [int]
     $MaxHeight,    
 
     # The format of the returned image
-    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='?url')]
+    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='Query')]
     [string]
     $Format,
 
     # Whether to force a refresh of the cached oEmbed data
-    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='?url')]
+    [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='Query')]
     [switch]
     $Force,    
 
@@ -140,14 +142,21 @@ function Get-OEmbed {
                 ) -Id $progressId
             }
             if (-not $script:oEmbedUrlCache[$oEmbedUrl] -or $Force) {
+                if ($WhatIfPreference) {  return $oEmbedUrl }
+                if (-not $PSCmdlet.ShouldProcess($oEmbedUrl)) {
+                    Write-Verbose "Skipping $oEmbedUrl"
+                    continue
+                } else {
+                    Write-Verbose "Retrieving $oEmbedUrl"
+                }
+                
                 $script:oEmbedUrlCache[$oEmbedUrl] = Invoke-RestMethod -Uri $oEmbedUrl |
                     Add-Member NoteProperty 'Url' $Url -Force -PassThru |
                     Add-Member NoteProperty 'oEmbedUrl' $oEmbedUrl -Force -PassThru
                 $script:oEmbedUrlCache[$oEmbedUrl].pstypenames.insert(0,'OpenEmbedding')
-            }
-    
+            }                
             
-            $script:oEmbedUrlCache[$oEmbedUrl]        
+            $script:oEmbedUrlCache[$oEmbedUrl]
         }
 
         if ($oEmbedQueue.Count -gt 1) {
