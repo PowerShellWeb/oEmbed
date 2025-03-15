@@ -1,0 +1,14 @@
+<!-- Generated with EZOut 2.0.6: Install-Module EZOut or https://github.com/StartAutomating/EZOut -->
+<Types>
+  <Type>
+    <Name>oEmbed</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>oEmbedCache</Name>
+        <GetScriptBlock>
+                        return &amp; $this { $script:oEmbedUrlCache }
+                    </GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
+</Types>
