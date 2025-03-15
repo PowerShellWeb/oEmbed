@@ -29,6 +29,12 @@
   <Type>
     <Name>openEmbedding</Name>
     <Members>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>
+                        return "$($this.HTML)"
+                    </Script>
+      </ScriptMethod>
       <ScriptProperty>
         <Name>Markdown</Name>
         <GetScriptBlock>
