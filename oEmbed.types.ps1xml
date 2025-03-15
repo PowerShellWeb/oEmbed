@@ -9,6 +9,12 @@
                         return &amp; $this { $script:oEmbedUrlCache }
                     </GetScriptBlock>
       </ScriptProperty>
+      <ScriptProperty>
+        <Name>oEmbedProvider</Name>
+        <GetScriptBlock>
+                        Get-OEmbed -ProviderList
+                    </GetScriptBlock>
+      </ScriptProperty>
     </Members>
   </Type>
 </Types>
