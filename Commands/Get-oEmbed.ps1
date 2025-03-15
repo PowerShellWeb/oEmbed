@@ -39,7 +39,11 @@ function Get-OEmbed {
 
     [Parameter(Mandatory,ParameterSetName='ProviderByName')]
     [string]
-    $ProviderName
+    $ProviderName,
+
+    [Parameter(Mandatory,ParameterSetName='ProviderList')]
+    [switch]
+    $ProviderList
     )
 
     begin  {
@@ -58,6 +62,9 @@ function Get-OEmbed {
     }
     
     process {
+        if ($PSCmdlet.ParameterSetName -eq 'ProviderList') {
+            return $script:cachedOmbedProviders
+        }
         # If we're asking for a Provider by Name
         if ($PSCmdlet.ParameterSetName -eq 'ProviderByName') {
             # filter the list of providers
