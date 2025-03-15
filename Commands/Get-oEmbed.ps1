@@ -10,10 +10,10 @@ function Get-OEmbed {
         Most social networks support oEmbed, so this little function lets you embed almost any social network post
     #>
     [Alias('oEmbed')]
-    [CmdletBinding(PositionalBinding=$false,SupportsShouldProcess)]
+    [CmdletBinding(PositionalBinding=$false,SupportsShouldProcess,DefaultParameterSetName='?url')]
     param(
     # The URL
-    [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName,ParameterSetName='?url')]
+    [Parameter(Mandatory,Position=0,ValueFromPipeline,ValueFromPipelineByPropertyName,ParameterSetName='?url')]
     [Uri]
     $Url,
     
@@ -37,10 +37,13 @@ function Get-OEmbed {
     [switch]
     $Force,    
 
+    # The name of an oEmbed provider.  Wildcards are supported.
     [Parameter(Mandatory,ParameterSetName='ProviderByName')]
+    [SupportsWildcards()]
     [string]
     $ProviderName,
 
+    # If set, will list the oEmbed providers.
     [Parameter(Mandatory,ParameterSetName='ProviderList')]
     [switch]
     $ProviderList
@@ -59,6 +62,12 @@ function Get-OEmbed {
         if (-not $script:oEmbedUrlCache) {
             $script:oEmbedUrlCache = [Ordered]@{}
         }
+
+        if (-not $script:oEmbedDomainCache) {
+            $script:oEmbedDomainCache = [Ordered]@{}
+        }
+
+        $oEmbedQueue = [Collections.Queue]::new()
     }
     
     process {
@@ -71,18 +80,30 @@ function Get-OEmbed {
             return $script:cachedOmbedProviders | 
                 # and return the name
                 Where-Object Provider_Name -like $ProviderName        
-        }
-        $topLevelDomain = $Url.DnsSafeHost.Split('.')[-2..-1] -join '.'
+        }        
         $matchingEndpoint = 
-            foreach ($endpoint in $script:openEmbeddings) {                
-                if ($endpoint.DnsSafeHost -eq $topLevelDomain -or 
-                    $endpoint.DnsSafeHost -like "*.$topLevelDomain") {
-                    $endpoint
-                    break
+            if (-not $script:oEmbedDomainCache[$url.DnsSafeHost]) {
+                :oEmbedProvider foreach ($oEmbedProvider in $script:cachedOmbedProviders) {
+                    foreach ($oEmbedEndpoint in $oEmbedProvider.Endpoints) {
+                        foreach ($oEmbedScheme in $oEmbedEndpoint.Schemes) {
+                            if ($url -like $oEmbedScheme) {
+                                $script:oEmbedDomainCache[$url.DnsSafeHost] = $oEmbedEndpoint.url
+                                $script:oEmbedDomainCache[$url.DnsSafeHost]
+                                break oEmbedProvider
+                            }
+                        }
+                    }                
                 }
+            } else {
+                $script:oEmbedDomainCache[$url.DnsSafeHost]
             }
+            
         
-        if (-not $matchingEndpoint) { return }
+        if (-not $matchingEndpoint) {
+            Write-Error "No oEmbed Provider found for URL '$url'"
+            return
+        }        
+
         $oEmbedUrl = 
             "$($matchingEndpoint)?$(
                 @(
@@ -98,13 +119,39 @@ function Get-OEmbed {
                     }
                 ) -join '&'
             )"
-        if (-not $script:oEmbedUrlCache[$oEmbedUrl] -or $Force) {
-            $script:oEmbedUrlCache[$oEmbedUrl] = Invoke-RestMethod -Uri $oEmbedUrl |
-                Add-Member NoteProperty 'Url' $Url -Force -PassThru |
-                Add-Member NoteProperty 'oEmbedUrl' $oEmbedUrl -Force -PassThru
-            $script:oEmbedUrlCache[$oEmbedUrl].pstypenames.insert(0,'OpenEmbedding')
+
+        $oEmbedQueue.Enqueue([Ordered]@{
+            Url = $Url
+            oEmbedUrl = $oEmbedUrl
+        })        
+    }
+
+    end {        
+        $counter = 0
+        $total = $oEmbedQueue.Count
+        $progressId = $MyInvocation.HistoryId
+        foreach ($queueItem in $oEmbedQueue) {
+            $url = $queueItem.Url
+            $oEmbedUrl = $queueItem.oEmbedUrl
+            if ($oEmbedQueue.Count -gt 1) {
+                $counter++
+                Write-Progress "oEmbed" "Retrieving oEmbed data for $url" -PercentComplete (
+                    $counter * 100 / $total
+                ) -Id $progressId
+            }
+            if (-not $script:oEmbedUrlCache[$oEmbedUrl] -or $Force) {
+                $script:oEmbedUrlCache[$oEmbedUrl] = Invoke-RestMethod -Uri $oEmbedUrl |
+                    Add-Member NoteProperty 'Url' $Url -Force -PassThru |
+                    Add-Member NoteProperty 'oEmbedUrl' $oEmbedUrl -Force -PassThru
+                $script:oEmbedUrlCache[$oEmbedUrl].pstypenames.insert(0,'OpenEmbedding')
+            }
+    
+            
+            $script:oEmbedUrlCache[$oEmbedUrl]        
         }
-        $script:oEmbedUrlCache[$oEmbedUrl]
-        
+
+        if ($oEmbedQueue.Count -gt 1) {
+            Write-Progress "oEmbed" "Retrieving oEmbed data" -Completed -Id $progressId
+        }
     }
 }
